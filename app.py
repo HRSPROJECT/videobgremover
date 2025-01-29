@@ -6,6 +6,7 @@ import time
 import os
 from PIL import Image
 import requests
+import tempfile
 from io import BytesIO
 
 # --- Configuration ---
@@ -16,19 +17,42 @@ OUTPUT_FPS = 30
 
 # --- Function Definitions ---
 
-# ... (convert_to_png and download_image functions remain the same) ...
+def convert_to_png(image_path, output_dir="."):
+    """Converts an image to PNG and returns the new path."""
+    try:
+        img = Image.open(image_path)
+        name, ext = os.path.splitext(os.path.basename(image_path))
+        output_path = os.path.join(output_dir, f"{name}.png")
+        img.save(output_path, "PNG")
+        return output_path
+    except Exception as e:
+        st.error(f"Error converting image: {e}")
+        return None
+
+def download_image(url):
+    try:
+        response = requests.get(url, stream=True)
+        response.raise_for_status()  # Raise an exception for bad status codes
+        return Image.open(BytesIO(response.content))
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error downloading default background image: {e}")
+        return None
 
 def process_video(video_bytes, background_image, mask_threshold):
     """Processes a video for background replacement using MediaPipe."""
+    # Create a temporary file to store the video bytes
+    tfile = tempfile.NamedTemporaryFile(delete=False) 
+    tfile.write(video_bytes)
+    tfile.close()
+
     segmentation = mp.solutions.selfie_segmentation.SelfieSegmentation(model_selection=1)
     
-    cap = cv2.VideoCapture(video_bytes)  # Use video bytes directly
+    cap = cv2.VideoCapture(tfile.name) 
 
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = cap.get(cv2.CAP_PROP_FPS)
 
-    # Create an output video using in-memory buffer
     out = cv2.VideoWriter(OUTPUT_PATH, cv2.VideoWriter_fourcc(*'MP4V'), fps, (width, height))
 
     frame_count = 0
@@ -53,10 +77,9 @@ def process_video(video_bytes, background_image, mask_threshold):
 
             output = np.where(condition, frame, resized_background)
 
-            out.write(output)  # Write to in-memory buffer
+            out.write(output)
             frame_count += 1
 
-            # Update progress bar
             progress = int(frame_count / int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) * 100)
             progress_bar.update(progress)
 
@@ -66,7 +89,9 @@ def process_video(video_bytes, background_image, mask_threshold):
 
     finally:
         cap.release()
-        out.release()  # Video is now in the output buffer
+        out.release()
+        # Remove the temporary file
+        os.unlink(tfile.name) 
 
     end_time = time.time()
     total_time = end_time - start_time
@@ -83,10 +108,8 @@ st.title("Background Remover")
 uploaded_video = st.file_uploader("Upload a video", type=["mp4"])
 
 if uploaded_video is not None:
-    # Read video bytes
     video_bytes = uploaded_video.read()
 
-    # Get background image (default or uploaded)
     background_option = st.radio("Background Option:", ("Default", "Upload"))
     if background_option == "Default":
         background_image = download_image(DEFAULT_BACKGROUND_URL)
@@ -101,4 +124,4 @@ if uploaded_video is not None:
         if st.button("Process Video"):
             output_path = process_video(video_bytes, background_image, MASK_THRESHOLD)
             if output_path:
-                st.video(output_path) # Display the output video using st.video
+                st.video(output_path)
