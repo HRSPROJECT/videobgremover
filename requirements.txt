@@ -1,11 +1,7 @@
 streamlit
-opencv-python
+opencv-python==4.6.0.66 # try this version first
 mediapipe
 numpy
 Pillow
 tensorflow
 requests
-mesa-libgl
-libgl1-mesa-glx
-libgl1-mesa-dri
-xvfb
