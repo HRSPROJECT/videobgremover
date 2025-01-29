@@ -5,3 +5,7 @@ numpy
 Pillow
 tensorflow
 requests
+mesa-libgl
+libgl1-mesa-glx
+libgl1-mesa-dri
+xvfb
