@@ -117,9 +117,9 @@ def process_video(video_bytes, background_image, mask_threshold):
 st.title("Background Remover")
 
 # Add the redirect button
-if st.button("Explore"):
-    st.markdown(f'<a href="https://hrsproject.github.io/home/" target="_blank">Explore</a>', unsafe_allow_html=True)
+if st.markdown(f'<a href="https://hrsproject.github.io/home/" target="_blank">Explore</a>', unsafe_allow_html=True)
 
+    
 uploaded_video = st.file_uploader("Upload a video", type=["mp4"])
 
 
