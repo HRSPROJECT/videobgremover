@@ -9,7 +9,6 @@ import requests
 import tempfile
 from io import BytesIO
 
-
 # --- Configuration ---
 DEFAULT_BACKGROUND_URL = "https://i.imgur.com/1q56L1X.png"  # Public green screen image
 OUTPUT_PATH = 'output.mp4'
@@ -42,13 +41,13 @@ def download_image(url):
 def process_video(video_bytes, background_image, mask_threshold):
     """Processes a video for background replacement using MediaPipe."""
     # Create a temporary file to store the video bytes
-    tfile = tempfile.NamedTemporaryFile(delete=False)
+    tfile = tempfile.NamedTemporaryFile(delete=False) 
     tfile.write(video_bytes)
     tfile.close()
 
     segmentation = mp.solutions.selfie_segmentation.SelfieSegmentation(model_selection=1)
-
-    cap = cv2.VideoCapture(tfile.name)
+    
+    cap = cv2.VideoCapture(tfile.name) 
 
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -58,9 +57,9 @@ def process_video(video_bytes, background_image, mask_threshold):
 
     frame_count = 0
     start_time = time.time()
-
+    
     # Convert the background to RGB using cv2
-    background_rgb = cv2.cvtColor(np.array(background_image), cv2.COLOR_RGBA2RGB)
+    background_rgb = cv2.cvtColor(np.array(background_image), cv2.COLOR_RGBA2RGB)  
 
     try:
         while cap.isOpened():
@@ -77,11 +76,11 @@ def process_video(video_bytes, background_image, mask_threshold):
 
             resized_background = cv2.resize(background_rgb, (width, height))  # Use background_rgb
 
-            output = np.where(condition, frame, resized_background)
+            output = np.where(condition, frame, resized_background) 
 
             out.write(output)
             frame_count += 1
-    
+
     except Exception as e:
         st.error(f"An error occurred during processing: {e}")
         return None
@@ -89,37 +88,19 @@ def process_video(video_bytes, background_image, mask_threshold):
     finally:
         cap.release()
         out.release()
-        # Remove the temporary file
-        os.unlink(tfile.name)
+        os.unlink(tfile.name)  # Remove temporary file
 
     end_time = time.time()
     total_time = end_time - start_time
     st.info(f"Processed {frame_count} frames in {total_time:.2f} seconds.")
-    if frame_count > 0:
-        st.info(f"Average FPS: {frame_count / total_time:.2f} FPS")
+    st.info(f"Average FPS: {frame_count / total_time:.2f} FPS")
     st.success(f"Video processing complete.")
-    return OUTPUT_PATH
 
-def display_frames(video_bytes, mask_threshold, background_rgb):
-    """Displays frames with a progress bar."""
-    cap = cv2.VideoCapture(video_bytes)
-    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    progress_bar = st.progress(0)
-    for i in range(frame_count):
-        ret, frame = cap.read()
-        if not ret:
-            break
-        # Perform background replacement (same as in process_video)
-        RGB = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = mp.solutions.selfie_segmentation.SelfieSegmentation(model_selection=1).process(RGB)
-        mask = results.segmentation_mask
-        rsm = np.stack((mask,) * 3, axis=-1)
-        condition = (rsm > mask_threshold).astype(np.uint8)
-        resized_background = cv2.resize(background_rgb, (frame.shape[1], frame.shape[0]))
-        output = np.where(condition, frame, resized_background)
-        st.image(output, caption=f"Frame {i+1}", channels="BGR")
-        progress_bar.progress((i + 1) / frame_count)
-    cap.release()
+    # Read the processed video file into memory for display with st.video
+    with open(OUTPUT_PATH, 'rb') as f:
+        video_data = f.read()
+
+    return video_data  # Return the video data instead of the file path
 
 # --- Streamlit App ---
 
@@ -142,14 +123,7 @@ if uploaded_video is not None:
 
     if background_image is not None:
         if st.button("Process Video"):
-            background_rgb = cv2.cvtColor(np.array(background_image), cv2.COLOR_RGBA2RGB)
-            # Create a temporary file for display_frames
-            tfile = tempfile.NamedTemporaryFile(delete=False)
-            tfile.write(video_bytes)
-            tfile.close()
-            # display_frames using the temporary file path
-            display_frames(tfile.name, MASK_THRESHOLD, background_rgb)
-            os.unlink(tfile.name) # remove temporary file
-            output_path = process_video(video_bytes, background_image, MASK_THRESHOLD)
-            if output_path:
-                st.video(output_path)
+            with st.spinner("Processing video..."):
+                video_data = process_video(video_bytes, background_image, MASK_THRESHOLD)
+                if video_data:
+                    st.video(video_data)
