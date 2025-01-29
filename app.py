@@ -56,8 +56,10 @@ def process_video(video_bytes, background_image, mask_threshold):
     out = cv2.VideoWriter(OUTPUT_PATH, cv2.VideoWriter_fourcc(*'MP4V'), fps, (width, height))
 
     frame_count = 0
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    progress_bar = st.progress(0)  # Initialize progress bar
     start_time = time.time()
-    
+
     # Convert the background to RGB using cv2
     background_rgb = cv2.cvtColor(np.array(background_image), cv2.COLOR_RGBA2RGB)  
 
@@ -81,9 +83,13 @@ def process_video(video_bytes, background_image, mask_threshold):
             out.write(output)
             frame_count += 1
 
+            # Update progress bar
+            progress = int(frame_count / total_frames * 100)
+            progress_bar.progress(progress)
+
     except Exception as e:
         st.error(f"An error occurred during processing: {e}")
-        return None
+        return None, None
 
     finally:
         cap.release()
@@ -100,7 +106,7 @@ def process_video(video_bytes, background_image, mask_threshold):
     with open(OUTPUT_PATH, 'rb') as f:
         video_data = f.read()
 
-    return video_data  # Return the video data instead of the file path
+    return video_data, OUTPUT_PATH  # Return video data and file path
 
 # --- Streamlit App ---
 
@@ -124,6 +130,14 @@ if uploaded_video is not None:
     if background_image is not None:
         if st.button("Process Video"):
             with st.spinner("Processing video..."):
-                video_data = process_video(video_bytes, background_image, MASK_THRESHOLD)
+                video_data, output_path = process_video(video_bytes, background_image, MASK_THRESHOLD)
                 if video_data:
                     st.video(video_data)
+
+                    # Download button
+                    st.download_button(
+                        label="Download Processed Video",
+                        data=video_data,
+                        file_name="processed_video.mp4",
+                        mime="video/mp4",
+                    )
