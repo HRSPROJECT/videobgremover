@@ -18,88 +18,57 @@ MASK_THRESHOLD = 0.6
 OUTPUT_FPS = 30
 
 # --- Function Definitions ---
+# ... (Function definitions for convert_to_png, download_image, and process_video remain the same) ...
 
-def convert_to_png(image_path, output_dir="."):
-    """Converts an image to PNG and returns the new path."""
-    try:
-        img = Image.open(image_path)
-        name, ext = os.path.splitext(os.path.basename(image_path))
-        output_path = os.path.join(output_dir, f"{name}.png")
-        img.save(output_path, "PNG")
-        return output_path
-    except Exception as e:
-        st.error(f"Error converting image: {e}")
-        return None
-
-def download_image(url):
-    try:
-        response = requests.get(url, stream=True)
-        response.raise_for_status()
-        return Image.open(BytesIO(response.content))
-    except requests.exceptions.RequestException as e:
-        st.error(f"Error downloading default background image: {e}")
-        return None
-
-def process_video(video_bytes, background_image, mask_threshold):
-    """Processes a video for background replacement using MediaPipe."""
-    tfile = tempfile.NamedTemporaryFile(delete=False)
-    tfile.write(video_bytes)
-    tfile.close()
-
-    segmentation = mp.solutions.selfie_segmentation.SelfieSegmentation(model_selection=1)
-    cap = cv2.VideoCapture(tfile.name)
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    out = cv2.VideoWriter(OUTPUT_PATH, cv2.VideoWriter_fourcc(*'MP4V'), fps, (width, height))
-
-    frame_count = 0
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    progress_bar = st.progress(0)
-    start_time = time.time()
-
-    background_rgb = cv2.cvtColor(np.array(background_image), cv2.COLOR_RGBA2RGB)
-
-    try:
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
-
-            RGB = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            results = segmentation.process(RGB)
-            mask = results.segmentation_mask
-            rsm = np.stack((mask,) * 3, axis=-1)
-            condition = (rsm > mask_threshold).astype(np.uint8)
-            resized_background = cv2.resize(background_rgb, (width, height))
-            output = np.where(condition, frame, resized_background)
-            out.write(output)
-            frame_count += 1
-            progress = int(frame_count / total_frames * 100)
-            progress_bar.progress(progress)
-
-    except Exception as e:
-        st.error(f"An error occurred during processing: {e}")
-        return None, None
-
-    finally:
-        cap.release()
-        out.release()
-        os.unlink(tfile.name)
-
-    end_time = time.time()
-    total_time = end_time - start_time
-    st.info(f"Processed {frame_count} frames in {total_time:.2f} seconds.")
-    st.info(f"Average FPS: {frame_count / total_time:.2f} FPS")
-    st.success(f"Video processing complete.")
-
-    with open(OUTPUT_PATH, 'rb') as f:
-        video_data = f.read()
-
-    return video_data, OUTPUT_PATH
 
 # --- Streamlit App ---
 
+# Initialize session state for theme
+if "theme" not in st.session_state:
+    st.session_state.theme = "light"
+
+# Define custom CSS for light and dark themes
+light_theme = """
+    <style>
+    body {
+        background-color: #f0f2f6;
+        color: #262730;
+    }
+    .stButton>button {
+        background-color: #f0f2f6;
+        color: #262730;
+        border: 1px solid #262730;
+    }
+    </style>
+"""
+
+dark_theme = """
+    <style>
+    body {
+        background-color: #262730;
+        color: #f0f2f6;
+    }
+    .stButton>button {
+        background-color: #262730;
+        color: #f0f2f6;
+        border: 1px solid #f0f2f6;
+    }
+    </style>
+"""
+
+# Apply the selected theme
+if st.session_state.theme == "light":
+    st.markdown(light_theme, unsafe_allow_html=True)
+else:
+    st.markdown(dark_theme, unsafe_allow_html=True)
+
+# Theme toggle button
+if st.button("Toggle Theme"):
+    st.session_state.theme = "dark" if st.session_state.theme == "light" else "light"
+    st.experimental_rerun()  # Rerun the app to apply the theme change
+
+
+# Hide UI elements except Settings
 hide_st_style = """
             <style>
             #MainMenu {visibility: hidden;}
@@ -107,20 +76,20 @@ hide_st_style = """
             header {visibility: hidden;}
             .css-eczf16 {visibility:hidden;}
             .stActionButton {visibility: hidden;}
-            .stApp {background-color: white !important; color: black !important;} 
             </style>
             """
 st.markdown(hide_st_style, unsafe_allow_html=True)
 
 st.title("Background Remover")
 
+# Explore button with JavaScript redirect
 if st.button("Explore"):
     js = f"window.open('https://hrsproject.github.io/home/')"
     html = f'<img src onerror="{js}">'
     div = Div(text=html)
     show(div)
 
-
+# File uploaders and background selection
 uploaded_video = st.file_uploader("Upload a video", type=["mp4"])
 
 if uploaded_video is not None:
