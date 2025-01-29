@@ -1,8 +1,7 @@
 streamlit
-opencv-python==4.6.0.66 # try this version first
+opencv-python-headless==4.8.1.78  
 mediapipe
 numpy
 Pillow
 tensorflow
 requests
-apt-get install -y libgl1-mesa-glx
