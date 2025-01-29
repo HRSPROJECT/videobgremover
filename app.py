@@ -16,7 +16,15 @@ MASK_THRESHOLD = 0.6
 OUTPUT_FPS = 30
 
 # --- Function Definitions ---
-
+hide_st_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
+            #settings {visibility:show;}
+            </style>
+            """
+st.markdown(hide_st_style, unsafe_allow_html=True)
 def convert_to_png(image_path, output_dir="."):
     """Converts an image to PNG and returns the new path."""
     try:
