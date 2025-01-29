@@ -5,3 +5,4 @@ numpy
 Pillow
 tensorflow
 requests
+bokeh
