@@ -16,15 +16,7 @@ MASK_THRESHOLD = 0.6
 OUTPUT_FPS = 30
 
 # --- Function Definitions ---
-hide_st_style = """
-            <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
-            #settings {visibility:show;}
-            </style>
-            """
-st.markdown(hide_st_style, unsafe_allow_html=True)
+
 def convert_to_png(image_path, output_dir="."):
     """Converts an image to PNG and returns the new path."""
     try:
@@ -116,12 +108,13 @@ def process_video(video_bytes, background_image, mask_threshold):
 
 st.title("Background Remover")
 
-# Add the redirect button
-if st.markdown(f'<a href="https://hrsproject.github.io/home/" target="_blank">Explore</a>', unsafe_allow_html=True)
+# Add the direct redirect link
+st.markdown(
+    f'<a href="https://hrsproject.github.io/home/" target="_blank" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-align: center; text-decoration: none; border-radius: 5px;">Explore</a>',
+    unsafe_allow_html=True,
+)
 
-    
 uploaded_video = st.file_uploader("Upload a video", type=["mp4"])
-
 
 if uploaded_video is not None:
     video_bytes = uploaded_video.read()
