@@ -10,7 +10,7 @@ import tempfile
 from io import BytesIO
 
 # --- Configuration ---
-DEFAULT_BACKGROUND_URL = "https://i.imgur.com/1q56L1X.png"  # Public green screen image
+DEFAULT_BACKGROUND_URL = "https://whitescreen.online/image/green-background.png"  # Public green screen image
 OUTPUT_PATH = 'output.mp4'
 MASK_THRESHOLD = 0.6
 OUTPUT_FPS = 30
