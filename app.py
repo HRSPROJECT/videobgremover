@@ -60,6 +60,9 @@ def process_video(video_bytes, background_image, mask_threshold):
     
     progress_bar = st.progress(0)  # Add a progress bar
 
+    # Convert the background to RGB using cv2
+    background_rgb = cv2.cvtColor(np.array(background_image), cv2.COLOR_RGBA2RGB)  
+
     try:
         while cap.isOpened():
             ret, frame = cap.read()
@@ -73,9 +76,9 @@ def process_video(video_bytes, background_image, mask_threshold):
             rsm = np.stack((mask,) * 3, axis=-1)
             condition = (rsm > mask_threshold).astype(np.uint8)
 
-            resized_background = cv2.resize(np.array(background_image), (width, height))
+            resized_background = cv2.resize(background_rgb, (width, height))  # Use background_rgb
 
-            output = np.where(condition, frame, resized_background)
+            output = np.where(condition, frame, resized_background) 
 
             out.write(output)
             frame_count += 1
