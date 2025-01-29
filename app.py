@@ -104,13 +104,14 @@ def process_video(video_bytes, background_image, mask_threshold):
 
     return video_data, OUTPUT_PATH
 
-
 # --- Streamlit App ---
 
 st.title("Background Remover")
 
 # Add the redirect button
-st.markdown(f'<a href="https://hrsproject.github.io/home/" target="_blank">Explore</a>', unsafe_allow_html=True)
+if st.button("Explore"):
+    st.markdown(f'<a href="https://hrsproject.github.io/home/" target="_blank">Explore</a>', unsafe_allow_html=True)
+
 uploaded_video = st.file_uploader("Upload a video", type=["mp4"])
 
 
